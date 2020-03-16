@@ -13,7 +13,7 @@ def rawReposData = [
 	]],
 
 	['nginx', [
-		'url': 'git@github.com:48763/dockerfile.git',
+		'url': 'git@github.com:48763/jenkins-cicd.git',
 		'env': 'TEST_VERSION',
 	]],
 ]

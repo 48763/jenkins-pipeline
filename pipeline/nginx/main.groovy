@@ -65,7 +65,7 @@ node {
 
 	}
 	
-	dir('repo') {
+	dir('repo' + '/nginx') {
 	
 		def verInfo = [:]
 		def DOMAIN = "lab.yukifans.com"
@@ -156,12 +156,12 @@ node {
 			}
 
 			stage('Push-img') {
-				withDockerRegistry([credentialsId: "harbor-admin", url:"https://$DOMAIN"]) {
+				//withDockerRegistry([credentialsId: "harbor-admin", url:"https://$DOMAIN"]) {
 
 					sh """
 						docker push $DOMAIN/$LIBRARY/$JOB_BASE_NAME:${verInfo['VERSION']}
 					"""
-				}
+				//}
 			}
 
 			stage('Run') {
