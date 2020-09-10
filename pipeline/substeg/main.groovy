@@ -147,7 +147,7 @@ node {
 					).trim()
 
 					if(verInfo['database_DIGEST'] != digest) {
-						verInfo['database_VERSION']= MAIN_VERSION + (sh(
+						verInfo['database_VERSION']= "$MAIN_VERSION" + (sh(
 							returnStdout: true,
 							script: 'grep database_VERSION ver.info | sed \'s/database_VERSION=2.0.//g\'',
 						).trim().toInteger() +1)
@@ -165,7 +165,7 @@ node {
 			)
 
 			if (verInfo['appserver_VERSION'] != null || verInfo['web_VERSION'] != null || verInfo['database_VERSION'] != null) {
-				verInfo['service_VERSION'] = MAIN_VERSION + (sh(
+				verInfo['service_VERSION'] = "$MAIN_VERSION" + (sh(
 					returnStdout: true,
 					script: 'grep service-system ver.info | sed \'s/service-system=2.0.//g\'',
 				).trim().toInteger() +1)
