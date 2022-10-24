@@ -167,6 +167,12 @@ node {
                 sshagent(['git-bot']) {
                     sh 'git push $([ "$BRANCH_BASE" = "$BRANCH_PUSH" ] || echo --force) origin "HEAD:$BRANCH_PUSH"'
                 }
+
+                withDockerRegistry([credentialsId: "registry"]) {
+                    sh """
+                        docker push ${DOMAIN}/${LIBRARY}/${repo}:${verInfo['BUILD_VERSION']}
+                    """
+                }
             }
 
         } else {
