@@ -8,10 +8,10 @@ properties([
 
 def vars = fileLoader.fromGit(
      'vars.groovy',
-     'git@github.com:48763/jenkins-pipeline.git', // repo
-     'main', // branch
-     'git-bot', // credentialsId
-     'master', // node/label
+     'git@github.com:48763/jenkins-pipeline.git', // Repo
+     'main', // Branch
+     'git-bot', // CredentialsId
+     'master', // Jenkins node label
 )
 
 def repo = env.JOB_BASE_NAME
@@ -124,7 +124,7 @@ node {
                 returnStdout: true,
                 script: 'git rev-list --count "origin/${BRANCH_BASE}...HEAD"',
         ).trim().toInteger()
-        def hasChanges = (numCommits > -1)
+        def hasChanges = (numCommits > 0)
 
         if (hasChanges) {
 
