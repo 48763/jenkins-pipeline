@@ -4,7 +4,8 @@ def defaultRepoMeta = [
     ['otherEnvs', []],
     ['branch-base', 'main'], // branch to check out from
     ['branch-push', 'main'], // branch to push to
-    ['registry', '48763']
+    ['registry', '48763'],
+    ['registry-url', 'https://index.docker.io/v1/'],
 ]
 
 def rawReposData = [
