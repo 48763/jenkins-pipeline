@@ -4,22 +4,23 @@ def defaultRepoMeta = [
     ['otherEnvs', []],
     ['branch-base', 'main'], // branch to check out from
     ['branch-push', 'main'], // branch to push to
+    ['registry', '48763']
 ]
 
 def rawReposData = [
     // TODO busybox (BUSYBOX_VERSION) -- looong builds
     ['jenkins-test-project', [
-        'env': 'TEST_VERSION',
+        'env': 'test-1.0.',
     ]],
     ['nodejs-sample', [
-        'env': 'TEST_VERSION'
+        'env': '1.0.'
     ]]
 ]
 
-// list of repos: ["celery", "wordpress", ...]
+// list of repos: ["nodejs-sample", ...]
 repos = []
 
-// map of repo metadata: ["celery": ["url": "...", ...], ...]
+// map of repo metadata: ["nodejs-sample": ["url": "...", ...], ...]
 reposMeta = [:]
 
 def repoMeta(repo) {

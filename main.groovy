@@ -14,15 +14,9 @@ def vars = fileLoader.fromGit(
      'master', // Jenkins node label
 )
 
-def repo = env.JOB_BASE_NAME
-def repoMeta = vars.repoMeta(repo)
+def repoMeta = vars.repoMeta(env.JOB_BASE_NAME)
 
 node {
-
-    env.BRANCH_BASE = repoMeta['branch-base']
-    env.BRANCH_PUSH = repoMeta['branch-push']
-    // 
-    env.MAIN_VERSION = "1.0."
 
     stage('Checkout') {
 
@@ -57,13 +51,14 @@ node {
         if (repoMeta['branch-base'] != repoMeta['branch-push']) {
             sshagent(['git-bot']) {
                 sh """
-                    git -C repo pull --rebase origin "${BRANCH_BASE}"
+                    git -C repo pull --rebase origin ${repoMeta['branch-base']}
                 """
             }
         }
     }
 
     def verInfo = [:]
+    def imageName
 
     dir('repo') {
 
@@ -83,18 +78,20 @@ node {
             ).trim()
 
             if(main_digest != env_digest) {
-                verInfo['BUILD_VERSION']= "${MAIN_VERSION}" + (sh(
+                verInfo['BUILD_VERSION']= "${repoMeta['env']}" + (sh(
                     returnStdout: true,
                     script: 'grep BUILD_VERSION .jenkins/env | sed \'s/BUILD_VERSION=1.0.//g\'',
                 ).trim().toInteger() +1)
-                // Service to parameterize
+                
+                imageName = "${repoMeta['registry']}/${JOB_BASE_NAME}:${verInfo['BUILD_VERSION']}"
+
                 sh """
-                    sed -ri -e \"s/^(.*\\/service\\/${repo}:).*/\\1${verInfo['BUILD_VERSION']}/\" docker-compose.yaml
-                    sed -ri -e \'s/^(BUILD_VERSION=).*/\\1\'\"${verInfo['BUILD_VERSION']}\"\'/\' .jenkins/env
-                    sed -ri -e \'s/^(DIGEST=).*/\\1\'\"$main_digest\"\'/\' .jenkins/env
+                    sed -ri -e "s|(image: ).*|\\1${imageName}|" docker-compose.yaml
+                    sed -ri -e "s/^(BUILD_VERSION=).*/\\1${verInfo['BUILD_VERSION']}/" .jenkins/env
+                    sed -ri -e "s/^(DIGEST=).*/\\1${main_digest}/" .jenkins/env
                 """
             } else {
-                echo "${repo} not updated"
+                echo "${JOB_BASE_NAME} not updated"
             }
 
         }
@@ -110,40 +107,36 @@ node {
 
             sh """
                 git add .jenkins/env docker-compose.yaml || true
-                git commit -m "${JOB_BASE_NAME} update ${repo} to ${verInfo['BUILD_VERSION']}" || true
+                git commit -m "${JOB_BASE_NAME} update to ${verInfo['BUILD_VERSION']}" || true
             """
         }
 
         stage("log") {
                 sh """
-                    git log -p "origin/${BRANCH_BASE}...HEAD"
+                    git log -p "origin/${repoMeta['branch-base']}...HEAD"
                 """
         }
 
         def numCommits = sh(
                 returnStdout: true,
-                script: 'git rev-list --count "origin/${BRANCH_BASE}...HEAD"',
+                script: """git rev-list --count \"origin/${repoMeta['branch-base']}...HEAD\"""",
         ).trim().toInteger()
         def hasChanges = (numCommits > 0)
 
         if (hasChanges) {
 
-            def DOMAIN = "harbor.yukifans.com"
-            def LIBRARY = "service"
-
             stage('Build') {
                 sh """
-                    docker build . -t ${DOMAIN}/${LIBRARY}/${repo}:${verInfo['BUILD_VERSION']}
+                    docker build . -t ${imageName}
                 """
             }
 
             stage('Test') {
                 sh '''
-                    docker-compose up -d
+                    docker-compose up -d  || true
                     cd tests
                     ./main.sh 3 $(ls -I main.sh) 
-                '''
-                
+                '''   
             }
 
             stage("Launch") {
@@ -153,30 +146,35 @@ node {
                 )
             }
 
+            stage('Push-Image') {
+                withDockerRegistry([credentialsId: "registry"]) {
+                    sh """
+                        docker push ${imageName}
+                    """
+                }
+            }
+
             stage('Deploy') {
                 sshagent(['ssh']) {
                     // Check remote user permission to www
                     // Remote IP to parameterize
                     sh """
-
+                        # TO-DO
                     """
                 }
             }
 
             stage('Push-Git') {
                 sshagent(['git-bot']) {
-                    sh 'git push $([ "$BRANCH_BASE" = "$BRANCH_PUSH" ] || echo --force) origin "HEAD:$BRANCH_PUSH"'
-                }
-
-                withDockerRegistry([credentialsId: "registry"]) {
                     sh """
-                        docker push ${DOMAIN}/${LIBRARY}/${repo}:${verInfo['BUILD_VERSION']}
+                        git push \$([ "${repoMeta['branch-base']}" = "${repoMeta['branch-push']}" ] || echo --force) \
+                            origin "HEAD:${repoMeta['branch-push']}"
                     """
                 }
             }
 
         } else {
-            echo("No changes in ${repo}!  Skipping.")
+            echo("No changes in ${JOB_BASE_NAME}!  Skipping.")
         }
 
     }
