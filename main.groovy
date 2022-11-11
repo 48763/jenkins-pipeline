@@ -147,6 +147,7 @@ node {
             }
 
             stage('Push-Image') {
+                // credentialsId: "ecr:<region>:<credentialsId>"
                 withDockerRegistry(credentialsId: "registry", url: "repoMeta['registry-url']") {
                     sh """
                         docker push ${imageName}
